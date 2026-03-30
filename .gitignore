@@ -1,0 +1,60 @@
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Python / venv ──
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# ── Node ──
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build outputs ──
+bora-web/dist/
+bora-api/build/
+
+# ── Icon SVGs (hosted on Supabase Storage) ──
+bora-web/public/icons/bioicons/
+bora-web/public/icons/genemania/
+bora-web/public/icons/reactome/
+bora-web/public/icons/scidraw/
+bora-web/public/icons/scienceicons/
+bora-web/public/icons/servier/
+bora-web/public/icons/tabler/
+bora-web/public/icons/ai-generated/
+# Keep manifest.json (small, needed for local dev fallback)
+
+# ── Environment variables (secrets!) ──
+.env
+.env.*
+!.env.example
+
+# ── IDE / Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Logs ──
+*.log
+npm-debug.log*
+
+# ── Test / Coverage ──
+.pytest_cache/
+htmlcov/
+.coverage
+coverage/
+
+# ── Misc ──
+bora_project_structure.txt
+bora_brand_guide.docx
