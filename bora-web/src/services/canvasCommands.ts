@@ -10,7 +10,7 @@ const AI_API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
 /** A single canvas command from the AI */
 export interface CanvasCommand {
-  action: "addIcon" | "addText" | "addShape" | "addConnector";
+  action: "addIcon" | "addText" | "addShape" | "addConnector" | "addZone" | "addMembrane";
   // addIcon
   icon?: string;
   // addText
@@ -31,6 +31,11 @@ export interface CanvasCommand {
   arrowhead?: boolean;
   style?: string;   // "activation" | "inhibition" | "binding" | "transport" | "conversion" | "default"
   label?: string;    // optional text label for the connection
+  // addZone
+  labelPosition?: string;  // "top-left" | "top-center" | "bottom-left"
+  opacity?: number;
+  // addMembrane
+  cellCount?: number;  // number of membrane cells to tile
   // Positioning
   x?: number;
   y?: number;
@@ -491,13 +496,13 @@ export async function executeCommands(
           const sdef = styleMap[connStyle] || styleMap["default"];
           const strokeColor = cmd.stroke ?? sdef.color;
 
-          // Build a path — straight lines for horizontal/vertical, subtle curve otherwise
+          // Build a path — ALWAYS use bezier curves for a natural biological look
           const dx = x2 - x1;
           const dy = y2 - y1;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          // Only curve when the line is diagonal; keep straight for axis-aligned connections
+          // Always add some curvature — more for diagonal, subtle for axis-aligned
           const isAxisAligned = Math.abs(dx) < 15 || Math.abs(dy) < 15;
-          const curveOffset = isAxisAligned ? 0 : Math.min(dist * 0.1, 25);
+          const curveOffset = isAxisAligned ? Math.min(dist * 0.08, 18) : Math.min(dist * 0.18, 45);
           const nx = -dy / (dist || 1);
           const ny = dx / (dist || 1);
           const cx1 = x1 + dx * 0.33 + nx * curveOffset;
@@ -505,12 +510,7 @@ export async function executeCommands(
           const cx2 = x1 + dx * 0.66 + nx * curveOffset;
           const cy2 = y1 + dy * 0.66 + ny * curveOffset;
 
-          let pathStr: string;
-          if (curveOffset === 0) {
-            pathStr = `M ${x1} ${y1} L ${x2} ${y2}`;
-          } else {
-            pathStr = `M ${x1} ${y1} C ${cx1} ${cy1} ${cx2} ${cy2} ${x2} ${y2}`;
-          }
+          const pathStr = `M ${x1} ${y1} C ${cx1} ${cy1} ${cx2} ${cy2} ${x2} ${y2}`;
           const pathObj = new fabric.Path(pathStr, {
             fill: "",
             stroke: strokeColor,
@@ -522,9 +522,9 @@ export async function executeCommands(
 
           const groupItems: any[] = [pathObj];
 
-          // Calculate arrowhead angle from the last segment direction
-          const endTanX = curveOffset === 0 ? dx : x2 - cx2;
-          const endTanY = curveOffset === 0 ? dy : y2 - cy2;
+          // Calculate arrowhead angle from the bezier end tangent
+          const endTanX = x2 - cx2;
+          const endTanY = y2 - cy2;
           const angle = Math.atan2(endTanY, endTanX);
           const angleDeg = angle * (180 / Math.PI);
 
@@ -715,6 +715,222 @@ export async function executeCommands(
             fabricCanvas.renderAll();
             added++;
           }
+          break;
+        }
+
+        case "addZone": {
+          if (!fabricCanvas) break;
+          const fabric = (window as any).fabric;
+          if (!fabric) break;
+
+          const zx = cmd.x ?? 40;
+          const zy = cmd.y ?? 60;
+          const zw = cmd.width ?? 880;
+          const zh = cmd.height ?? 200;
+          const zFill = cmd.fill ?? "#f0f4ff";
+          const zStroke = cmd.stroke ?? "#94b8db";
+          const zRx = cmd.rx ?? 14;
+          const zOpacity = cmd.opacity ?? 0.6;
+
+          // Outer zone background — main fill
+          const zoneBg = new fabric.Rect({
+            width: zw,
+            height: zh,
+            fill: zFill,
+            opacity: zOpacity,
+            stroke: zStroke,
+            strokeWidth: cmd.strokeWidth ?? 1.5,
+            rx: zRx,
+            ry: zRx,
+            originX: "left",
+            originY: "top",
+          });
+
+          // Inner glow — slightly smaller, lighter rect for depth effect
+          const innerGlow = new fabric.Rect({
+            left: 4,
+            top: 4,
+            width: zw - 8,
+            height: zh - 8,
+            fill: zFill,
+            opacity: zOpacity * 0.35,
+            stroke: "transparent",
+            rx: zRx - 2,
+            ry: zRx - 2,
+            originX: "left",
+            originY: "top",
+          });
+
+          // Top edge highlight for subtle gradient feel
+          const topEdge = new fabric.Rect({
+            left: 8,
+            top: 4,
+            width: zw - 16,
+            height: Math.min(zh * 0.15, 30),
+            fill: "#ffffff",
+            opacity: 0.25,
+            stroke: "transparent",
+            rx: zRx - 4,
+            ry: zRx - 4,
+            originX: "left",
+            originY: "top",
+          });
+
+          const items: any[] = [zoneBg, innerGlow, topEdge];
+
+          // Zone label
+          if (cmd.label) {
+            const labelPos = cmd.labelPosition ?? "top-left";
+            let lx = 14;
+            let ly = 8;
+            let anchor: string = "left";
+            if (labelPos === "top-center") {
+              lx = zw / 2;
+              anchor = "center";
+            } else if (labelPos === "bottom-left") {
+              ly = zh - 30;
+            }
+
+            const labelBg = new fabric.Rect({
+              left: lx - 8,
+              top: ly - 3,
+              width: (cmd.label.length * 8.5) + 20,
+              height: 24,
+              fill: "#ffffff",
+              opacity: 0.9,
+              rx: 6,
+              ry: 6,
+              originX: "left",
+              originY: "top",
+              shadow: new fabric.Shadow({ color: "rgba(0,0,0,0.08)", blur: 4, offsetX: 0, offsetY: 1 }),
+            });
+
+            const labelText = new fabric.Text(cmd.label, {
+              left: lx,
+              top: ly,
+              fontSize: 13,
+              fontWeight: "700",
+              fontFamily: "Inter, Arial, sans-serif",
+              fill: "#2d3748",
+              originX: anchor,
+              originY: "top",
+            });
+            items.push(labelBg, labelText);
+          }
+
+          const zoneGroup = new fabric.Group(items, {
+            left: zx,
+            top: zy,
+            originX: "left",
+            originY: "top",
+            selectable: true,
+          });
+          zoneGroup.name = cmd.label ? `zone:${cmd.label}` : "zone";
+          fabricCanvas.add(zoneGroup);
+          fabricCanvas.renderAll();
+          added++;
+          break;
+        }
+
+        case "addMembrane": {
+          if (!fabricCanvas) break;
+          const fabric = (window as any).fabric;
+          if (!fabric) break;
+
+          const mx = cmd.x ?? 40;
+          const my = cmd.y ?? 270;
+          const mw = cmd.width ?? 880;
+          const mStyle = cmd.style ?? "epithelial";
+          const cellCount = cmd.cellCount ?? Math.max(12, Math.floor(mw / 40));
+
+          // Draw a thick tissue membrane with two staggered rows of cells
+          const cellWidth = mw / cellCount;
+          const cellH = 18;
+          const totalH = cellH * 2.4;
+          const items: any[] = [];
+
+          // Membrane background band — thicker, with top/bottom border lines
+          const bandBg = new fabric.Rect({
+            width: mw,
+            height: totalH + 6,
+            fill: mStyle === "endothelial" ? "#f8d7da" : "#fce4ec",
+            stroke: "transparent",
+            rx: 2,
+            ry: 2,
+            originX: "left",
+            originY: "center",
+            left: 0,
+            top: 0,
+          });
+          items.push(bandBg);
+
+          // Top border line
+          const topLine = new fabric.Line([0, -(totalH / 2 + 2), mw, -(totalH / 2 + 2)], {
+            stroke: mStyle === "endothelial" ? "#c47080" : "#b07090",
+            strokeWidth: 1.5,
+          });
+          items.push(topLine);
+
+          // Bottom border line
+          const bottomLine = new fabric.Line([0, totalH / 2 + 2, mw, totalH / 2 + 2], {
+            stroke: mStyle === "endothelial" ? "#c47080" : "#b07090",
+            strokeWidth: 1.5,
+          });
+          items.push(bottomLine);
+
+          // Two rows of cells, offset like brickwork for realistic tissue
+          const cellFill1 = mStyle === "endothelial" ? "#e8a0b0" : "#d4a0b8";
+          const cellFill2 = mStyle === "endothelial" ? "#dba0aa" : "#c898a8";
+          const cellStroke = mStyle === "endothelial" ? "#c47080" : "#b07090";
+          const rows = [
+            { y: -cellH * 0.52, fill: cellFill1, offset: 0 },
+            { y: cellH * 0.52, fill: cellFill2, offset: cellWidth * 0.5 },
+          ];
+
+          for (const row of rows) {
+            for (let ci = 0; ci < cellCount + 1; ci++) {
+              const cx = ci * cellWidth + cellWidth / 2 + row.offset;
+              if (cx < -cellWidth || cx > mw + cellWidth) continue;
+              const cell = new fabric.Ellipse({
+                left: cx,
+                top: row.y,
+                rx: cellWidth * 0.52,
+                ry: cellH * 0.48,
+                fill: row.fill,
+                stroke: cellStroke,
+                strokeWidth: 0.8,
+                originX: "center",
+                originY: "center",
+              });
+              items.push(cell);
+
+              // Nucleus — elongated, slightly offset
+              const nuc = new fabric.Ellipse({
+                left: cx + (ci % 2 === 0 ? -2 : 2),
+                top: row.y,
+                rx: cellWidth * 0.15,
+                ry: cellH * 0.22,
+                fill: "#7b2d8b",
+                opacity: 0.45,
+                stroke: "transparent",
+                originX: "center",
+                originY: "center",
+              });
+              items.push(nuc);
+            }
+          }
+
+          const memGroup = new fabric.Group(items, {
+            left: mx,
+            top: my,
+            originX: "left",
+            originY: "center",
+            selectable: true,
+          });
+          memGroup.name = "membrane";
+          fabricCanvas.add(memGroup);
+          fabricCanvas.renderAll();
+          added++;
           break;
         }
       }
