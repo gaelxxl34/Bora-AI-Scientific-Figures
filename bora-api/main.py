@@ -45,9 +45,11 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://localhost:3000",
+        "http://172.237.145.217",
+        "https://172.237.145.217",
         "https://bora-ai-scientific-figures.vercel.app",
-        "https://*.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
