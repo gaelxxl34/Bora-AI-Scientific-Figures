@@ -13,7 +13,7 @@ export interface ChatMessage {
   content: string;
 }
 
-const API_BASE = "/api/ai";
+const API_BASE = `${import.meta.env.VITE_API_URL || ""}/ai`;
 
 /** Fetch available AI models. */
 export async function fetchModels(): Promise<AiModel[]> {
