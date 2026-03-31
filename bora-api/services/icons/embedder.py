@@ -1,21 +1,29 @@
 # services/icons/embedder.py — sentence-transformers embedding pipeline
 # Generates 384d vectors from text descriptions using all-MiniLM-L6-v2
+# NOTE: sentence-transformers is NOT in requirements.txt (too heavy for server).
+#       Install manually for local ingestion: pip install sentence-transformers==3.0.0
 
 import logging
 from typing import List, Optional
-from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-_model: Optional[SentenceTransformer] = None
+_model = None
 MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384
 
 
-def get_model() -> SentenceTransformer:
+def get_model():
     """Lazy-load the sentence-transformers model (downloads on first use)."""
     global _model
     if _model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            raise RuntimeError(
+                "sentence-transformers is not installed. "
+                "Run: pip install sentence-transformers==3.0.0"
+            )
         logger.info("Loading embedding model %s …", MODEL_NAME)
         _model = SentenceTransformer(MODEL_NAME)
         logger.info("Embedding model loaded.")

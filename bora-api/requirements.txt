@@ -17,9 +17,6 @@ asyncpg==0.29.0
 alembic==1.13.2
 pgvector==0.3.2
 
-# Embeddings
-sentence-transformers==3.0.0
-
 # Export
 cairosvg==2.7.1
 lxml==5.2.2
@@ -47,6 +44,9 @@ pydantic-settings==2.4.0
 pytest==8.3.0
 pytest-asyncio==0.23.8
 httpx==0.27.0
+
+# ── Heavy deps (local/ingestion only — not needed on server) ──
+# Install manually for icon embedding: pip install sentence-transformers==3.0.0
 
 # Utilities
 python-dotenv==1.0.1
