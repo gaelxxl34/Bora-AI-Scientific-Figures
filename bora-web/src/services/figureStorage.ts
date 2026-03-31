@@ -3,6 +3,18 @@
 
 const STORAGE_KEY = "bora_figures";
 
+/** Generate a UUID that works on both HTTP and HTTPS */
+function generateId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts (HTTP)
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export interface SavedChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -49,7 +61,7 @@ export const figureStorage = {
   create(title: string): SavedFigure {
     const now = new Date().toISOString();
     const figure: SavedFigure = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       title,
       pages: [
         {
@@ -92,7 +104,7 @@ export const figureStorage = {
     const now = new Date().toISOString();
     const copy: SavedFigure = {
       ...original,
-      id: crypto.randomUUID(),
+      id: generateId(),
       title: `${original.title} (copy)`,
       createdAt: now,
       updatedAt: now,
