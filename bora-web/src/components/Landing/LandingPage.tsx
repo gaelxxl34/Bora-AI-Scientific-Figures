@@ -21,7 +21,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-24">
           <img
             src="/img/Bora AI.png"
-            alt="Bora — AI Scientific Figures"
+            alt="Bora AI — Scientific Figure Creator Logo"
             className="h-20 w-auto"
           />
           <div className="hidden sm:flex items-center gap-8">
@@ -266,7 +266,7 @@ export function LandingPage() {
       {/* ── CTA ── */}
       <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <img src="/img/Bora AI.png" alt="Bora" style={{ width: 220 }} className="mx-auto mb-6" />
+          <img src="/img/Bora AI.png" alt="Bora AI — Create scientific figures with artificial intelligence" style={{ width: 220 }} className="mx-auto mb-6" />
           <h2 className="text-3xl sm:text-4xl font-bold text-ink-black tracking-tight">
             Start creating better figures
           </h2>
@@ -288,7 +288,7 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-border-gray py-8 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <img src="/img/Bora AI.png" alt="Bora" style={{ width: 130 }} />
+          <img src="/img/Bora AI.png" alt="Bora AI" style={{ width: 130 }} />
           <p className="text-[11px] text-slate/50">
             © {new Date().getFullYear()} Bora. Icons via BioIcons, Servier Medical Art & SciDraw (CC-BY / CC0).
           </p>
