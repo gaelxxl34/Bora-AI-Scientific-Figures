@@ -26,11 +26,16 @@ mkdir -p /home/bora
 chown bora:bora /home/bora
 
 # 4. Clone repo & set up backend
-echo "[4/7] Cloning repository..."
+echo "[4/7] Setting up repository..."
 sudo -u bora bash -c '
   cd /home/bora
-  git clone https://github.com/gaelxxl34/Bora-AI-Scientific-Figures.git app
-  cd app/bora-api
+  if [ -d "app" ]; then
+    echo "Repo already exists, pulling latest..."
+    cd app && git pull
+  else
+    git clone https://github.com/gaelxxl34/Bora-AI-Scientific-Figures.git app
+  fi
+  cd /home/bora/app/bora-api
   python3 -m venv venv
   source venv/bin/activate
   pip install --upgrade pip
